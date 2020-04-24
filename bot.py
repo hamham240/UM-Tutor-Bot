@@ -104,7 +104,7 @@ async def on_message(message):
 
 
 
-
+	#Function for when tutor wants to see the current queeu
 	if message.content.startswith('!q'):
 		#store the server's unique id in variable serverId
 		serverId = str(message.channel.guild.id)
@@ -155,7 +155,7 @@ async def on_message(message):
 
 
 
-
+	#Function for when the student wants to join the queue
 	if message.content.startswith('!joinq'):
 		#store the server's unique id in variable serverId
 		serverId = str(message.channel.guild.id)
@@ -204,7 +204,7 @@ async def on_message(message):
 
 
 
-
+	#Function for when the student wants to leave the queue
 	if message.content.startswith('!leaveq'):
 		#store the server's unique id in variable serverId
 		serverId = str(message.channel.guild.id)
