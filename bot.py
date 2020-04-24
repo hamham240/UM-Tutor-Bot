@@ -27,37 +27,8 @@ async def on_message(message):
 		return
 
 
-
-	#If message starts with !status then check the boolean in firestore that stores the tutor's status within thi
-	if message.content.startswith('!status'):
-		#store the server's unique id in variable serverId
-		serverId = str(message.channel.guild.id)
-
-		#create a snapshot of the this server's document in the 'server-status' collection located in firestore
-		doc_ref = db.collection(u'server-status').document(serverId).get()
-		doc = doc_ref.to_dict()
-
-		#Try to reference this server's status, if it doesnt exist then we need to register this server in firestore and set to false as default
-		try:
-			doc["status"]
-		except:
-			db.collection(u'server-status').document(serverId).set({
-				u'status' : False
-			})
-			doc_ref = db.collection(u'server-status').document(serverId).get()
-			doc = doc_ref.to_dict()
-
-
-		#Based on the boolean located in the document for this server in firestore, send a message whether the tutor is online or not
-		if doc['status']:
-			await message.channel.send("The tutor is currently online.")
-		else:
-			await message.channel.send("The tutor is currently offline.")
-
-
-
-	#Function for when the tutor wants to start their tutoring session.
-	#Change the boolean 'server-status' in firestore to true and display the tutor as starting the tutoring session as well as the time
+	#Tutor command
+	#If the tutor wants to start the tutoring session
 	if message.content.startswith('t!start'):
 		#store the server's unique id in variable serverId
 		serverId = str(message.channel.guild.id)
@@ -80,8 +51,8 @@ async def on_message(message):
 
 
 
-	#Function for when the tutor wants to end their tutoring session
-	#Change the boolean 'server-status' in firestore to false and display the tutor as ending the tutoring session as well as the time
+	#Tutor command
+	#If the tutor wants to end the current tutoring session
 	if message.content.startswith('t!end'):
 		#store the server's unique id in variable serverId
 		serverId = str(message.channel.guild.id)
@@ -103,8 +74,8 @@ async def on_message(message):
 		await message.channel.send("The tutor has ended tutoring at " + str(dateTime.hour) + ":" + minutes + ".")
 
 
-
-	#Function for when tutor wants to see the current queeu
+	#Student/Tutor command
+	#If the student/tutor wants to see the queue
 	if message.content.startswith('!q'):
 		#store the server's unique id in variable serverId
 		serverId = str(message.channel.guild.id)
@@ -152,10 +123,37 @@ async def on_message(message):
 			await message.channel.send(output)
 
 
+	#Student command
+	#If the student wants to see the status of the tutor
+	if message.content.startswith('!status'):
+		#store the server's unique id in variable serverId
+		serverId = str(message.channel.guild.id)
+
+		#create a snapshot of the this server's document in the 'server-status' collection located in firestore
+		doc_ref = db.collection(u'server-status').document(serverId).get()
+		doc = doc_ref.to_dict()
+
+		#Try to reference this server's status, if it doesnt exist then we need to register this server in firestore and set to false as default
+		try:
+			doc["status"]
+		except:
+			db.collection(u'server-status').document(serverId).set({
+				u'status' : False
+			})
+			doc_ref = db.collection(u'server-status').document(serverId).get()
+			doc = doc_ref.to_dict()
+
+
+		#Based on the boolean located in the document for this server in firestore, send a message whether the tutor is online or not
+		if doc['status']:
+			await message.channel.send("The tutor is currently online.")
+		else:
+			await message.channel.send("The tutor is currently offline.")
 
 
 
-	#Function for when the student wants to join the queue
+	#Student command
+	#If the student wants to join the queue
 	if message.content.startswith('!joinq'):
 		#store the server's unique id in variable serverId
 		serverId = str(message.channel.guild.id)
@@ -202,9 +200,8 @@ async def on_message(message):
 
 
 
-
-
-	#Function for when the student wants to leave the queue
+	#Student command
+	#If the student wants to leave the queue
 	if message.content.startswith('!leaveq'):
 		#store the server's unique id in variable serverId
 		serverId = str(message.channel.guild.id)
