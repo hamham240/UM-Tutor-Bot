@@ -179,7 +179,7 @@ async def on_message(message):
 
 		#If a user tries to join the queue but is already in the queue, print out that they are already in the queue
 		if str(message.author.id) in currentQueue.keys():
-			await message.channel.send("You are already in the queue. Your position is " + currentQueue[str(message.author.id)] + ".")
+			await message.channel.send("You are already in the queue. Your position is " + str(currentQueue[str(message.author.id)] + 1) + ".")
 			return
 
 		#insert updated queue into database
