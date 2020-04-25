@@ -74,6 +74,83 @@ async def on_message(message):
 		await message.channel.send("The tutor has ended tutoring at " + str(dateTime.hour) + ":" + minutes + ".")
 
 
+
+	#Tutor command
+	#If the tutor wants to move on to the next student in the queue
+	if message.content.startswith('t!next'):
+		#store the server's unique id in variable serverId
+		serverId = str(message.channel.guild.id)
+
+		#create a snapshot of the this server's document in the 'server-status' collection located in firestore
+		doc_ref = db.collection(u'server-queues').document(serverId).get()
+		doc = doc_ref.to_dict()
+
+		#check to see if the server exists in the database, else create a default entry in the db and reinitialize variables
+		try:
+			doc["queue-size"]
+		except:
+			db.collection(u'server-queues').document(serverId).set({
+				u'queue-size' : 0,
+				u'queue' : {}
+			})
+			doc_ref = db.collection(u'server-queues').document(serverId).get()
+			doc = doc_ref.to_dict()
+
+		#initialize variables which store data from the db (the size of the current queue as well as the queue itself)
+		queueSize = doc["queue-size"]
+		currentQueue = doc["queue"]
+
+		#if the queue is empty then display that the queue is empty and return
+		if (len(currentQueue) == 0):
+			await message.channel.send("Queue is empty. Unable to get next student.")
+			return
+
+		#readjust the queue, popping the student in the first position off the queue and then shifting everyone else up
+		for key, value in currentQueue.items():
+			if value == 0:
+				tutoredUserId = key
+			if value == 1:
+				nextUserId = key
+			currentQueue[key] = value - 1;
+		
+		currentQueue.pop(tutoredUserId)
+				
+
+		#insert updated queue into database
+		try:
+			db.collection(u'server-queues').document(serverId).set({
+				u'queue-size' : (queueSize - 1),
+				u'queue' : currentQueue
+			})
+
+			#If there are students left in the queue then @ the next student
+			if (len(currentQueue) == 0):
+				await message.channel.send("The tutor has finished tutoring " + client.get_user(int(tutoredUserId)).name + ". The queue is now empty.")
+			else:
+				await message.channel.send("The tutor has finished tutoring " + tutoredUserId + ". The queue size is now " + str(len(currentQueue)) + ".\n" + client.get_user(int(nextUserId)).mention + " You're up next!")
+		except:
+			await message.channel.send("Unable to update the queue at the time.")
+
+
+
+	#Tutor command
+	#If the tutor wants to wipe the queue
+	if message.content.startswith('t!wipeq'):
+		#store the server's unique id in variable serverId
+		serverId = str(message.channel.guild.id)
+
+		#create a snapshot of the this server's document in the 'server-status' collection located in firestore
+		try:
+			doc_ref = db.collection(u'server-queues').document(serverId).set({
+				u'queue-size' : 0,
+				u'queue' : {}
+			})
+			await message.channel.send("The queue has successfully been wiped.")
+		except:
+			await message.channel.send("Unable to wipe queue at the moment.")
+
+
+
 	#Student/Tutor command
 	#If the student/tutor wants to see the queue
 	if message.content.startswith('!q'):
@@ -121,6 +198,7 @@ async def on_message(message):
 
 			#send the message once its constructed
 			await message.channel.send(output)
+
 
 
 	#Student command
@@ -197,9 +275,6 @@ async def on_message(message):
 
 
 
-
-
-
 	#Student command
 	#If the student wants to leave the queue
 	if message.content.startswith('!leaveq'):
@@ -237,6 +312,9 @@ async def on_message(message):
 		for key, value in currentQueue.items():
 			if value > authorPosition:
 				currentQueue[key] = value - 1;
+			if value == 1:
+				nextUserId = key
+
 
 		#insert updated queue into database
 		try:
@@ -244,9 +322,16 @@ async def on_message(message):
 				u'queue-size' : (queueSize - 1),
 				u'queue' : currentQueue
 			})
-			await message.channel.send("Left the queue! The current queue size is " + str(queueSize-1) + ".")
+
+			if authorPosition == 0 and nextUserId:
+				await message.channel.send(message.author.name + "has left the queue.  The current queue size is " + str(queueSize-1) + ".\n" + client.get_user(int(nextUserId)).mention + " You're up next!")
+			else:
+				await message.channel.send("Left the queue! The current queue size is " + str(queueSize-1) + ".")
 		except:
 			await message.channel.send("Unable to leave queue at the time.")
+
+
+
 
 
 
