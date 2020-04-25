@@ -158,22 +158,39 @@ async def on_message(message):
 		serverId = str(message.channel.guild.id)
 
 		#create a snapshot of the this server's document in the 'server-status' collection located in firestore
-		doc_ref = db.collection(u'server-queues').document(serverId).get()
-		doc = doc_ref.to_dict()
+		q_doc_ref = db.collection(u'server-queues').document(serverId).get()
+		q_doc = q_doc_ref.to_dict()
 
 		#check to see if the server exists in the database, else create a default entry in the db and reinitialize variables
 		try:
-			doc["queue-size"]
+			q_doc["queue-size"]
 		except:
 			db.collection(u'server-queues').document(serverId).set({
 				u'queue-size' : 0,
 				u'queue' : {}
 			})
-			doc_ref = db.collection(u'server-queues').document(serverId).get()
-			doc = doc_ref.to_dict()
+			q_doc_ref = db.collection(u'server-queues').document(serverId).get()
+			q_doc = doc_ref.to_dict()
 
-		queueSize = doc['queue-size']
-		currentQueue = doc["queue"]
+		queueSize = q_doc['queue-size']
+		currentQueue = q_doc["queue"]
+
+		#create a snapshot of the this server's document in the 'server-status' collection located in firestore
+		status_doc_ref = db.collection(u'server-status').document(serverId).get()
+		status_doc = status_doc_ref.to_dict()
+
+		#Try to reference this server's status, if it doesnt exist then we need to register this server in firestore and set to false as default
+		try:
+			status_doc["status"]
+		except:
+			db.collection(u'server-status').document(serverId).set({
+				u'status' : False
+			})
+			status_doc_ref = db.collection(u'server-status').document(serverId).get()
+			status_doc = doc_ref.to_dict()
+
+		#store the status of the tutor
+		status = status_doc["status"]
 
 		#if queue is empty then print out that the queue is empty
 		if queueSize == 0:
@@ -189,12 +206,18 @@ async def on_message(message):
 					user = client.get_user(int(key)).name
 				except:
 					user = key
-
-				#if the author of the message wants to see the q then point towards their position, also add "Currently being tutored" to the student in the very first position
-				if str(message.author.id) == key:
-					output += str(currentQueue[key] + 1) + ". " + user + " <---- You (Currently being tutored)\n" if currentQueue[key] == 0 else str(currentQueue[key] + 1) + ". " + user + " <---- You\n"
+					
+				#if the author of the message wants to see the q then point towards their position, also add "Currently being tutored" to the student in the very first position if the tutor is online
+				if status:
+					if str(message.author.id) == key:
+						output += str(currentQueue[key] + 1) + ". " + user + " <---- You (Currently being tutored)\n" if currentQueue[key] == 0 else str(currentQueue[key] + 1) + ". " + user + " <---- You\n"
+					else:
+						output += str(currentQueue[key] + 1) + ". " + user + " (Currently being tutored)\n" if currentQueue[key] == 0 else str(currentQueue[key] + 1) + ". " + user + "\n"
 				else:
-					output += str(currentQueue[key] + 1) + ". " + user + " (Currently being tutored)\n" if currentQueue[key] == 0 else str(currentQueue[key] + 1) + ". " + user + "\n"
+					if str(message.author.id) == key:
+						output += str(currentQueue[key] + 1) + ". " + user + " <---- You \n" if currentQueue[key] == 0 else str(currentQueue[key] + 1) + ". " + user + " <---- You\n"
+					else:
+						output += str(currentQueue[key] + 1) + ". " + user + " \n" if currentQueue[key] == 0 else str(currentQueue[key] + 1) + ". " + user + "\n"
 
 			#send the message once its constructed
 			await message.channel.send(output)
