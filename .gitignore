@@ -1,3 +1,5 @@
 #Files to ignore
 discord_token.py
 key.json
+legacy_bot.py
+__pycache__/
